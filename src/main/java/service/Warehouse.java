@@ -8,6 +8,7 @@ import entities.Category;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class Warehouse {
@@ -37,26 +38,34 @@ public class Warehouse {
     public List<ProductRecord> getProductListRecord() {
         return Collections.unmodifiableList(productList.products());
     }
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-    public Map<UUID, List<ProductRecord>> getProductsPerId() {
-        Map<UUID, List<ProductRecord>> productsPerId = productList.products().stream()
-                .collect(Collectors.groupingBy(
-                        ProductRecord::id));
 
-        return Collections.unmodifiableMap(productsPerId);
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////
+    public <K, V> Map<K, List<V>> groupingProducts(Function<V, K> function, List<V> listItems) {
+        return Collections.unmodifiableMap(
+                listItems.stream()
+                        .collect(Collectors.groupingBy(function)));
     }
 
+    public <K, V> Map<K, Long> numberOfGroupedProducts(Function<V, K> function, List<V> listItems) {
+        return Collections.unmodifiableMap(
+                listItems.stream()
+                        .collect(Collectors.groupingBy(function, Collectors.counting())));
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////
+    public Map<UUID, List<ProductRecord>> getProductsPerId() {
+        return groupingProducts(ProductRecord::id, productList.products());
+    }
+
+    ///////Fixa denna///////////////////////////////////
     public List<ProductRecord> getAProductForItsId(UUID id) {
         Map<UUID, List<ProductRecord>> productsPerId = getProductsPerId();
         return productsPerId.getOrDefault(id, List.of());
     }
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-    public Map<LocalDate, List<ProductRecord>> getProductsPerCreatedAt() {
-        Map<LocalDate, List<ProductRecord>> productsPerCreatedAt = productList.products().stream()
-                .collect(Collectors.groupingBy(
-                        ProductRecord::createdAt));
 
-        return Collections.unmodifiableMap(productsPerCreatedAt);
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////
+    public Map<LocalDate, List<ProductRecord>> getProductsPerCreatedAt() {
+        return groupingProducts(ProductRecord::createdAt, productList.products());
     }
 
     public record ProductDatesToCompareRecord(LocalDate dateOne, LocalDate dateTwo) {
@@ -83,13 +92,10 @@ public class Warehouse {
                 .flatMap(entry -> entry.getValue().stream())
                 .toList();
     }
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////
-    public Map<Category, List<ProductRecord>> getProductsPerCategory() {
-        Map<Category, List<ProductRecord>> productsPerCategory = productList.products().stream()
-                .collect(Collectors.groupingBy(
-                        ProductRecord::category));
 
-        return Collections.unmodifiableMap(productsPerCategory);
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////
+    public Map<Category, List<ProductRecord>> getProductsPerCategory() {
+        return groupingProducts(ProductRecord::category, productList.products());
     }
 
     record ProductsPerProductRecord(List<ProductRecord> productRecord) {
@@ -122,20 +128,15 @@ public class Warehouse {
                         Collectors.toList(), ProductsPerProductRecord::new)
                 );
     }
- ////////////////////////////////////////////////////////////////////////////////////////////////////
-    public Map<Category, Long> getNumberOfProductsPerCategory() {
-        Map<Category, Long> productsPerCategory = productList.products().stream()
-                .collect(Collectors.groupingBy(
-                        ProductRecord::category, Collectors.counting()
-                ));
 
-        return Collections.unmodifiableMap(productsPerCategory);
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    public Map<Category, Long> getNumberOfProductsPerCategory() {
+        return numberOfGroupedProducts(ProductRecord::category, productList.products());
     }
 
     public long getNumberOfProductsForACategory(Category category) {
         Map<Category, Long> numberOfProductsPerCategory = getNumberOfProductsPerCategory();
         return numberOfProductsPerCategory.getOrDefault(category, 0L);
-
     }
 
     record NumberOfProductsPerCategoryRecord(Category category, long numberOfProducts) {
@@ -160,35 +161,18 @@ public class Warehouse {
                 .map(NumberOfProductsPerCategoryRecord::new)
                 .toList();
     }
-///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
     public Map<Character, List<ProductRecord>> getProductsPerFirstLetter() {
-        Map<Character, List<ProductRecord>> productsPerFirstLetter = productList.products().stream()
-                .filter(ProductsPerProductRecord::productHasFirstLetter)
-                .collect(Collectors.groupingBy(
-                        ProductsPerProductRecord::getCharAt));
-
-        return Collections.unmodifiableMap(productsPerFirstLetter);
+        return groupingProducts(ProductsPerProductRecord::getCharAt,
+                productList.products().stream()
+                        .filter(ProductsPerProductRecord::productHasFirstLetter)
+                        .collect(Collectors.toList()));
     }
 
-    record ProductsPerFirstLetterRecord(char firstLetter, List<ProductRecord> productRecord) {
-        public ProductsPerFirstLetterRecord(Map.Entry<Character, List<ProductRecord>> entry) {
-            this(entry.getKey(), List.copyOf(entry.getValue()));
-        }
-    }
-
-    private List<ProductsPerFirstLetterRecord> getProductsPerUniqueFirstLetter() {
-        Map<Character, List<ProductRecord>> productsPerFirstLetter = getProductsPerFirstLetter();
-
-        return productsPerFirstLetter.entrySet().stream()
-                .map(ProductsPerFirstLetterRecord::new)
-                .toList();
-    }
- ////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
     public Map<Month, List<ProductRecord>> getProductsPerMonth() {
-        Map<Month, List<ProductRecord>> productsPerMonth = productList.products().stream()
-                .collect(Collectors.groupingBy(
-                        product -> product.createdAt().getMonth()));
-        return Collections.unmodifiableMap(productsPerMonth);
+        return groupingProducts(product -> product.createdAt().getMonth(), productList.products());
     }
 
     public List<ProductRecord> getProductsForAMonth(Month month) {
@@ -197,7 +181,6 @@ public class Warehouse {
     }
 
     record ProductsPerMonthRecord(Month month, List<ProductRecord> productRecord) {
-
         public static boolean productHasMaxRating(ProductRecord productRecord, double maxRating) {
             return productRecord.rating() == maxRating;
         }
@@ -232,4 +215,3 @@ public class Warehouse {
                 .orElseThrow();
     }
 }
-
