@@ -39,7 +39,7 @@ public class Warehouse {
         return Collections.unmodifiableList(productList.products());
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////
     public <K, V> Map<K, List<V>> groupingProducts(Function<V, K> function, List<V> listItems) {
         return Collections.unmodifiableMap(
                 listItems.stream()
@@ -52,48 +52,44 @@ public class Warehouse {
                         .collect(Collectors.groupingBy(function, Collectors.counting())));
     }
 
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////
     public Map<UUID, List<ProductRecord>> getProductsPerId() {
         return groupingProducts(ProductRecord::id, productList.products());
     }
 
-    ///////Fixa denna///////////////////////////////////
     public List<ProductRecord> getAProductForItsId(UUID id) {
         Map<UUID, List<ProductRecord>> productsPerId = getProductsPerId();
         return productsPerId.getOrDefault(id, List.of());
     }
 
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////
     public Map<LocalDate, List<ProductRecord>> getProductsPerCreatedAt() {
         return groupingProducts(ProductRecord::createdAt, productList.products());
     }
 
     public record ProductDatesToCompareRecord(LocalDate dateOne, LocalDate dateTwo) {
-
         public static boolean isDateAfter(LocalDate dateOne, LocalDate dateTwo) {
             return dateOne.isAfter(dateTwo);
         }
     }
 
-    public List<ProductRecord> getAllProductsCreatedAfterADate(LocalDate createdAt, LocalDate dateToCompare) {
-        Map<LocalDate, List<ProductRecord>> allProductsForCreatedAt = getProductsPerCreatedAt();
-
-        return allProductsForCreatedAt.entrySet().stream()
-                .filter(_ -> ProductDatesToCompareRecord.isDateAfter(createdAt, dateToCompare))
+    public List<ProductRecord> getFilteredProductsByDate(LocalDate dateOne, LocalDate dateTwo) {
+        Map<LocalDate, List<ProductRecord>> allProductsCreatedAfter = getProductsPerCreatedAt();
+        return allProductsCreatedAfter.entrySet().stream()
+                .filter(entry -> ProductDatesToCompareRecord.isDateAfter(dateOne, dateTwo))
                 .flatMap(entry -> entry.getValue().stream())
                 .toList();
+    }
+
+    public List<ProductRecord> getAllProductsCreatedAfterADate(LocalDate createdAt, LocalDate dateToCompare) {
+        return getFilteredProductsByDate(createdAt, dateToCompare);
     }
 
     public List<ProductRecord> getAllUpdatedProducts(LocalDate updatedAt, LocalDate createdAt) {
-        Map<LocalDate, List<ProductRecord>> allProductsForCreatedAt = getProductsPerCreatedAt();
-
-        return allProductsForCreatedAt.entrySet().stream()
-                .filter(_ -> ProductDatesToCompareRecord.isDateAfter(updatedAt, createdAt))
-                .flatMap(entry -> entry.getValue().stream())
-                .toList();
+        return getFilteredProductsByDate(createdAt, updatedAt);
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////
     public Map<Category, List<ProductRecord>> getProductsPerCategory() {
         return groupingProducts(ProductRecord::category, productList.products());
     }
@@ -129,7 +125,7 @@ public class Warehouse {
                 );
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////
     public Map<Category, Long> getNumberOfProductsPerCategory() {
         return numberOfGroupedProducts(ProductRecord::category, productList.products());
     }
@@ -139,7 +135,7 @@ public class Warehouse {
         return numberOfProductsPerCategory.getOrDefault(category, 0L);
     }
 
-    record NumberOfProductsPerCategoryRecord(Category category, long numberOfProducts) {
+    public record NumberOfProductsPerCategoryRecord(Category category, long numberOfProducts) {
         public NumberOfProductsPerCategoryRecord(Map.Entry<Category, Long> entry) {
             this(entry.getKey(), entry.getValue());
         }
@@ -153,7 +149,7 @@ public class Warehouse {
         }
     }
 
-    private List<NumberOfProductsPerCategoryRecord> getAllCategoriesWithProducts() {
+    public List<NumberOfProductsPerCategoryRecord> getAllCategoriesWithProducts() {
         Map<Category, Long> numberOfProductsPerCategory = getNumberOfProductsPerCategory();
 
         return numberOfProductsPerCategory.entrySet().stream()
@@ -162,7 +158,7 @@ public class Warehouse {
                 .toList();
     }
 
-    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////
     public Map<Character, List<ProductRecord>> getProductsPerFirstLetter() {
         return groupingProducts(ProductsPerProductRecord::getCharAt,
                 productList.products().stream()
@@ -170,7 +166,7 @@ public class Warehouse {
                         .collect(Collectors.toList()));
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////
     public Map<Month, List<ProductRecord>> getProductsPerMonth() {
         return groupingProducts(product -> product.createdAt().getMonth(), productList.products());
     }
@@ -190,14 +186,11 @@ public class Warehouse {
         }
     }
 
-    private List<ProductRecord> getSortedProductsWithMaxRatingForThisMonth() {
+    public List<ProductRecord> getSortedProductsWithMaxRatingForThisMonth() {
         Month currentMonth = LocalDate.now().getMonth();
         List<ProductRecord> productsForAMonth = getProductsForAMonth(currentMonth);
 
-        double maxRating = productsForAMonth.stream()
-                .map(ProductRecord::rating)
-                .max(Double::compareTo)
-                .orElseThrow();
+        final double maxRating = getMaxRating(productsForAMonth);
 
         return productsForAMonth.stream()
                 .filter(product -> ProductsPerMonthRecord.productHasMaxRating(product, maxRating))
@@ -205,13 +198,10 @@ public class Warehouse {
                 .toList();
     }
 
-    //////////////////////////////////////////////////////////////////////////////////
-    private NumberOfProductsPerCategoryRecord CategoryWithTheMostProducts() {
-        Map<Category, Long> numberOfProductsPerCategory = getNumberOfProductsPerCategory();
-
-        return numberOfProductsPerCategory.entrySet().stream()
-                .map(NumberOfProductsPerCategoryRecord::new)
-                .max(NumberOfProductsPerCategoryRecord.comparingByNumberOfProducts())
+    private static double getMaxRating(List<ProductRecord> productsForAMonth) {
+        return productsForAMonth.stream()
+                .map(ProductRecord::rating)
+                .max(Double::compareTo)
                 .orElseThrow();
     }
 }
