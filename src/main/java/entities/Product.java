@@ -13,7 +13,7 @@ public final class Product {
     //    private final double rating;
     private double rating;
     private final LocalDate created_at;
-    //    private final LocalDate updated_at;
+    //    private final LocalDate updatedAt;
     private LocalDate updated_at;
 
     public Product(String name, Category category, double rating) {
@@ -53,12 +53,12 @@ public final class Product {
         this.rating = rating;
     }
 //
-//    public LocalDate created_at() {
-//        return created_at;
+//    public LocalDate createdAt() {
+//        return createdAt;
 //    }
 //
-//    public LocalDate updated_at() {
-//        return updated_at;
+//    public LocalDate updatedAt() {
+//        return updatedAt;
 //    }
 //
     public void setUpdated_at(LocalDate updated_at) {
@@ -74,13 +74,13 @@ public final class Product {
 //                Objects.equals(this.name, that.name) &&
 //                Objects.equals(this.category, that.category) &&
 //                Double.doubleToLongBits(this.rating) == Double.doubleToLongBits(that.rating) &&
-//                Objects.equals(this.created_at, that.created_at) &&
-//                Objects.equals(this.updated_at, that.updated_at);
+//                Objects.equals(this.createdAt, that.createdAt) &&
+//                Objects.equals(this.updatedAt, that.updatedAt);
 //    }
 //
 //    @Override
 //    public int hashCode() {
-//        return Objects.hash(id, name, category, rating, created_at, updated_at);
+//        return Objects.hash(id, name, category, rating, createdAt, updatedAt);
 //    }
 
     @Override
@@ -90,7 +90,7 @@ public final class Product {
                 "name=" + name + ", " +
                 "category=" + category + ", " +
                 "rating=" + rating + ", " +
-                "created_at=" + created_at + ", " +
-                "updated_at=" + updated_at + ']';
+                "createdAt=" + created_at + ", " +
+                "updatedAt=" + updated_at + ']';
     }
 }
