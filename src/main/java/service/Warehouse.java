@@ -14,9 +14,9 @@ import java.util.stream.Collectors;
 public class Warehouse {
     private final ProductList productList;
 
-    public Warehouse(ProductList productList) {
-        this.productList = productList;
-    }
+//    public Warehouse(ProductList productList) {
+//        this.productList = productList;
+//    }
 
     public Warehouse() {
         this.productList = new ProductList(List.of());
@@ -78,7 +78,7 @@ public class Warehouse {
     public List<ProductRecord> getFilteredProductsByDate(LocalDate dateOne, LocalDate dateTwo) {
         Map<LocalDate, List<ProductRecord>> allProductsCreatedAfter = getProductsPerCreatedAt();
         return allProductsCreatedAfter.entrySet().stream()
-                .filter(entry -> ProductDatesToCompareRecord.isDateAfter(dateOne, dateTwo))
+                .filter(_ -> ProductDatesToCompareRecord.isDateAfter(dateOne, dateTwo))
                 .flatMap(entry -> entry.getValue().stream())
                 .toList();
     }
@@ -96,7 +96,7 @@ public class Warehouse {
         return groupingProducts(ProductRecord::category, productList.products());
     }
 
-    record ProductsPerProductRecord(List<ProductRecord> productRecord) {
+    public record ProductsPerProductRecord(List<ProductRecord> productRecord) {
         public ProductsPerProductRecord(List<ProductRecord> productRecord) {
             this.productRecord = List.copyOf(productRecord);
         }
@@ -116,7 +116,7 @@ public class Warehouse {
         }
     }
 
-    private ProductsPerProductRecord getSortedProductsForACategory(Category category) {
+    public ProductsPerProductRecord getSortedProductsForACategory(Category category) {
         List<ProductRecord> productsForACategory = getProductsPerCategory().get(category);
 
         return productsForACategory.stream()
