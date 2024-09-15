@@ -12,8 +12,6 @@ public class ProductList {
     }
 
     public void addProduct(ProductRecord newProduct) {
-//        List<ProductRecord> newProductList = new ArrayList<>(this.products);
-//        newProductList.add(newProduct);
         products.add(newProduct);
     }
 

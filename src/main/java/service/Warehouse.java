@@ -22,8 +22,8 @@ public class Warehouse {
         this.productList = new ProductList(List.of());
     }
 
-    public void addNewProduct(InputProductData inputProductData) {
-        ProductRecord newProduct = new ProductRecord(
+    public ProductRecord createNewProduct(InputProductData inputProductData) {
+        return new ProductRecord(
                 UUID.randomUUID(),
                 inputProductData.name(),
                 inputProductData.category(),
@@ -31,8 +31,10 @@ public class Warehouse {
                 LocalDate.now(),
                 LocalDate.now()
         );
+    }
 
-        productList.addProduct(newProduct);
+    public void addNewProduct(InputProductData inputProductData) {
+        productList.addProduct(createNewProduct(inputProductData));
     }
 
     public List<ProductRecord> getProductListRecord() {
