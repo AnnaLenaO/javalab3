@@ -87,10 +87,6 @@ public class Warehouse {
                 .toList();
     }
 
-    public List<ProductRecord> getAllProductsCreatedAfterADate(LocalDate dateToCompare) {
-        return getFilteredProductsByDate(dateToCompare);
-    }
-
     public List<ProductRecord> getAllUpdatedProducts() {
         Map<LocalDate, List<ProductRecord>> allUpdatedProducts = getProductsPerUpdatedAt();
         return allUpdatedProducts.entrySet().stream()
@@ -110,7 +106,7 @@ public class Warehouse {
         }
 
         public static boolean productHasFirstLetter(ProductRecord productRecord) {
-            char firstLetter = getCharAt(productRecord);
+            char firstLetter = Character.toLowerCase(getCharAt(productRecord));
 
             return Character.isLetter(firstLetter) && (firstLetter >= 'a' && firstLetter <= 'z');
         }

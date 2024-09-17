@@ -175,18 +175,87 @@ class WarehouseTest {
                 .containsOnlyOnce("Wasagaming");
     }
 
-    @ParameterizedTest(name = "Group products per id")
+    @ParameterizedTest(name = "Record compare two dates")
+    @MethodSource("dateProvider")
+    void testProductDatesToCompareRecord(LocalDate dateOne, LocalDate dateTwo, boolean resultExpected) {
+
+        Warehouse.ProductDatesToCompareRecord compareRecordContent =
+                new Warehouse.ProductDatesToCompareRecord(dateOne, dateTwo);
+
+        boolean testResultCompareRecord =
+                Warehouse.ProductDatesToCompareRecord.isDateAfter(dateOne, dateTwo);
+
+        System.out.println(compareRecordContent);
+
+        assertThat(compareRecordContent).isNotNull();
+        assertThat(testResultCompareRecord).isEqualTo(resultExpected);
+    }
+
+    @ParameterizedTest(name = "Filter products by date")
     @MethodSource("productListProvider")
     void testGetFilteredProductsByDate(List<ProductRecord> productListRecord) {
 
         ProductList productList = new ProductList(productListRecord);
         Warehouse warehouse = new Warehouse(productList);
-        LocalDate dateOne = LocalDate.parse("2024-05-19");
-        LocalDate dateTwo = LocalDate.parse("2024-01-04");
-        List<ProductRecord> filteredTestResult = warehouse.getFilteredProductsByDate(dateOne, dateTwo);
+        LocalDate dateTwo = LocalDate.parse("2024-02-10");
+        List<ProductRecord> filteredTestResult = warehouse.getFilteredProductsByDate(dateTwo);
 
         assertThat(filteredTestResult).isNotNull();
-        assertThat(filteredTestResult.size()).isEqualTo(1);
+        assertThat(filteredTestResult.size()).isEqualTo(5);
+        assertThat(filteredTestResult)
+                .extracting("name")
+                .containsOnlyOnce("New Dawn");
+        assertThat(filteredTestResult)
+                .extracting("category")
+                .containsOnlyOnce(RAMBLER);
+        assertThat(filteredTestResult)
+                .extracting("name")
+                .doesNotContain("Duchesse De Montebello");
+    }
+
+    @ParameterizedTest(name = "Filter all updated products")
+    @MethodSource("productListProvider")
+    void testGetAllUpdatedProducts(List<ProductRecord> productListRecord) {
+
+        ProductList productList = new ProductList(productListRecord);
+        Warehouse warehouse = new Warehouse(productList);
+        List<ProductRecord> filteredTestResult = warehouse.getAllUpdatedProducts();
+        System.out.println(filteredTestResult);
+
+        assertThat(filteredTestResult).isNotNull();
+        assertThat(filteredTestResult.size()).isEqualTo(5);
+        assertThat(filteredTestResult)
+                .extracting("name")
+                .containsOnlyOnce("Ispahan");
+        assertThat(filteredTestResult)
+                .extracting("category")
+                .containsOnlyOnce(RUGOSA);
+        assertThat(filteredTestResult)
+                .extracting("name")
+                .doesNotContain("Hippolyte");
+        assertThat(filteredTestResult)
+                .extracting("category")
+                .containsSequence(RAMBLER, RAMBLER);
+    }
+
+    @ParameterizedTest(name = "Filter all updated products")
+    @MethodSource("productListProvider")
+    void testGetSortedProductsForACategory(List<ProductRecord> productListRecord) {
+
+        ProductList productList = new ProductList(productListRecord);
+        Warehouse warehouse = new Warehouse(productList);
+
+        List<ProductRecord> sortedTestResult = warehouse.getSortedProductsForACategory(RAMBLER).productRecord();
+        System.out.println(sortedTestResult);
+
+        assertThat(sortedTestResult).isNotNull();
+        assertThat(sortedTestResult.size()).isEqualTo(3);
+        assertThat(sortedTestResult)
+                .extracting("name")
+                .isSorted();
+        assertThat(sortedTestResult)
+                .extracting("name")
+                .containsSequence("Helenae Hybrida", "Lyckefund", "New Dawn");
     }
 
     static Stream<Arguments> inputProductDataProvider() {
@@ -196,16 +265,24 @@ class WarehouseTest {
         );
     }
 
+    static Stream<Arguments> dateProvider() {
+        return Stream.of(
+                arguments(LocalDate.parse("2024-02-10"), LocalDate.parse("2024-02-10"), false),
+                arguments(LocalDate.parse("2024-02-10"), LocalDate.parse("2024-02-11"), false),
+                arguments(LocalDate.parse("2024-02-10"), LocalDate.parse("2024-02-09"), true)
+        );
+    }
+
     static Stream<Arguments> productListProvider() {
         List<ProductRecord> productListRecord = Arrays.asList(
                 new ProductRecord(UUID.fromString("bc108fc2-6785-40c4-9392-b0e93358b26e"), "Hippolyte", GALLICA, 10.0, LocalDate.parse("2024-09-16"), LocalDate.parse("2024-09-16")),
                 new ProductRecord(UUID.fromString("51feaf5d-2972-44ec-a78a-5d8a8e1be1e9"), "Lyckefund", RAMBLER, 8.7, LocalDate.parse("2024-02-10"), LocalDate.parse("2024-05-19")),
-                new ProductRecord(UUID.fromString("e1c63601-999c-48d8-8900-cbc4b870db2e"), "Wasagaming", Category.RUGOSA, 6.3, LocalDate.parse("2024-09-15"), LocalDate.parse("2024-09-16")),
+                new ProductRecord(UUID.fromString("e1c63601-999c-48d8-8900-cbc4b870db2e"), "Wasagaming", RUGOSA, 6.3, LocalDate.parse("2024-09-15"), LocalDate.parse("2024-09-16")),
                 new ProductRecord(UUID.fromString("4ae21842-25d3-43f2-b502-626a25ac8f96"), "New Dawn", RAMBLER, 9.1, LocalDate.parse("2024-06-10"), LocalDate.parse("2024-05-19")),
                 new ProductRecord(UUID.fromString("25c20fc8-7d2c-4a16-94e3-9e797ea8472c"), "Helenae Hybrida", RAMBLER, 7.3, LocalDate.parse("2024-02-10"), LocalDate.parse("2024-07-19")),
                 new ProductRecord(UUID.fromString("1a39744d-fe31-46d4-bb2f-3a62353581dc"), "Duchesse De Montebello", GALLICA, 9.8, LocalDate.parse("2024-02-10"), LocalDate.parse("2024-06-04")),
-                new ProductRecord(UUID.fromString("4c00b99d-5106-4ebb-be9b-14c69b58b3a5"), "Louise Bugnet", Category.CANADIAN, 10.0, LocalDate.parse("2024-09-01"), LocalDate.parse("2024-09-01")),
-                new ProductRecord(UUID.fromString("aad34fe5-9994-42e6-baa9-e6d42340627c"), "Ispahan", Category.DAMASCENE, 9.9, LocalDate.parse("2024-09-01"), LocalDate.parse("2024-09-04"))
+                new ProductRecord(UUID.fromString("4c00b99d-5106-4ebb-be9b-14c69b58b3a5"), "Louise Bugnet", CANADIAN, 10.0, LocalDate.parse("2024-09-01"), LocalDate.parse("2024-09-01")),
+                new ProductRecord(UUID.fromString("aad34fe5-9994-42e6-baa9-e6d42340627c"), "Ispahan", DAMASCENE, 9.9, LocalDate.parse("2024-09-01"), LocalDate.parse("2024-09-04"))
         );
 
         Map<UUID, List<ProductRecord>> groupedByIdProviderExpected = new HashMap<>();
@@ -233,12 +310,12 @@ class WarehouseTest {
         List<ProductRecord> productListRecord = Arrays.asList(
                 new ProductRecord(UUID.fromString("bc108fc2-6785-40c4-9392-b0e93358b26e"), "Hippolyte", GALLICA, 10.0, LocalDate.parse("2024-09-16"), LocalDate.parse("2024-09-16")),
                 new ProductRecord(UUID.fromString("51feaf5d-2972-44ec-a78a-5d8a8e1be1e9"), "Lyckefund", RAMBLER, 8.7, LocalDate.parse("2024-02-10"), LocalDate.parse("2024-05-19")),
-                new ProductRecord(UUID.fromString("e1c63601-999c-48d8-8900-cbc4b870db2e"), "Wasagaming", Category.RUGOSA, 6.3, LocalDate.parse("2024-09-15"), LocalDate.parse("2024-09-16")),
+                new ProductRecord(UUID.fromString("e1c63601-999c-48d8-8900-cbc4b870db2e"), "Wasagaming", RUGOSA, 6.3, LocalDate.parse("2024-09-15"), LocalDate.parse("2024-09-16")),
                 new ProductRecord(UUID.fromString("4ae21842-25d3-43f2-b502-626a25ac8f96"), "New Dawn", RAMBLER, 9.1, LocalDate.parse("2024-06-10"), LocalDate.parse("2024-05-19")),
                 new ProductRecord(UUID.fromString("25c20fc8-7d2c-4a16-94e3-9e797ea8472c"), "Helenae Hybrida", RAMBLER, 7.3, LocalDate.parse("2024-02-10"), LocalDate.parse("2024-07-19")),
                 new ProductRecord(UUID.fromString("1a39744d-fe31-46d4-bb2f-3a62353581dc"), "Duchesse De Montebello", GALLICA, 9.8, LocalDate.parse("2024-02-10"), LocalDate.parse("2024-06-04")),
-                new ProductRecord(UUID.fromString("4c00b99d-5106-4ebb-be9b-14c69b58b3a5"), "Louise Bugnet", Category.CANADIAN, 10.0, LocalDate.parse("2024-09-01"), LocalDate.parse("2024-09-01")),
-                new ProductRecord(UUID.fromString("aad34fe5-9994-42e6-baa9-e6d42340627c"), "Ispahan", Category.DAMASCENE, 9.9, LocalDate.parse("2024-09-01"), LocalDate.parse("2024-09-04"))
+                new ProductRecord(UUID.fromString("4c00b99d-5106-4ebb-be9b-14c69b58b3a5"), "Louise Bugnet", CANADIAN, 10.0, LocalDate.parse("2024-09-01"), LocalDate.parse("2024-09-01")),
+                new ProductRecord(UUID.fromString("aad34fe5-9994-42e6-baa9-e6d42340627c"), "Ispahan", DAMASCENE, 9.9, LocalDate.parse("2024-09-01"), LocalDate.parse("2024-09-04"))
         );
 
         Map<UUID, List<ProductRecord>> groupedByIdProviderExpected = new HashMap<>();
@@ -268,12 +345,12 @@ class WarehouseTest {
         List<ProductRecord> productListRecord = Arrays.asList(
                 new ProductRecord(UUID.fromString("bc108fc2-6785-40c4-9392-b0e93358b26e"), "Hippolyte", GALLICA, 10.0, LocalDate.parse("2024-09-16"), LocalDate.parse("2024-09-16")),
                 new ProductRecord(UUID.fromString("51feaf5d-2972-44ec-a78a-5d8a8e1be1e9"), "Lyckefund", RAMBLER, 8.7, LocalDate.parse("2024-02-10"), LocalDate.parse("2024-05-19")),
-                new ProductRecord(UUID.fromString("e1c63601-999c-48d8-8900-cbc4b870db2e"), "Wasagaming", Category.RUGOSA, 6.3, LocalDate.parse("2024-09-15"), LocalDate.parse("2024-09-16")),
+                new ProductRecord(UUID.fromString("e1c63601-999c-48d8-8900-cbc4b870db2e"), "Wasagaming", RUGOSA, 6.3, LocalDate.parse("2024-09-15"), LocalDate.parse("2024-09-16")),
                 new ProductRecord(UUID.fromString("4ae21842-25d3-43f2-b502-626a25ac8f96"), "New Dawn", RAMBLER, 9.1, LocalDate.parse("2024-06-10"), LocalDate.parse("2024-05-19")),
                 new ProductRecord(UUID.fromString("25c20fc8-7d2c-4a16-94e3-9e797ea8472c"), "Helenae Hybrida", RAMBLER, 7.3, LocalDate.parse("2024-02-10"), LocalDate.parse("2024-07-19")),
                 new ProductRecord(UUID.fromString("1a39744d-fe31-46d4-bb2f-3a62353581dc"), "Duchesse De Montebello", GALLICA, 9.8, LocalDate.parse("2024-02-10"), LocalDate.parse("2024-06-04")),
-                new ProductRecord(UUID.fromString("4c00b99d-5106-4ebb-be9b-14c69b58b3a5"), "Louise Bugnet", Category.CANADIAN, 10.0, LocalDate.parse("2024-09-01"), LocalDate.parse("2024-09-01")),
-                new ProductRecord(UUID.fromString("aad34fe5-9994-42e6-baa9-e6d42340627c"), "Ispahan", Category.DAMASCENE, 9.9, LocalDate.parse("2024-09-01"), LocalDate.parse("2024-09-04"))
+                new ProductRecord(UUID.fromString("4c00b99d-5106-4ebb-be9b-14c69b58b3a5"), "Louise Bugnet", CANADIAN, 10.0, LocalDate.parse("2024-09-01"), LocalDate.parse("2024-09-01")),
+                new ProductRecord(UUID.fromString("aad34fe5-9994-42e6-baa9-e6d42340627c"), "Ispahan", DAMASCENE, 9.9, LocalDate.parse("2024-09-01"), LocalDate.parse("2024-09-04"))
         );
 
         Map<UUID, Long> countedByIdProviderExpected = productListRecord.stream().collect(Collectors.groupingBy(ProductRecord::id, Collectors.counting()));
