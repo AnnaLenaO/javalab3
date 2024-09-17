@@ -9,6 +9,8 @@ public class Main {
 
         InputProductData inputProductData = new InputProductData("Hippolyte", Category.GALLICA, 10);
         warehouse.addNewProduct(inputProductData);
+        warehouse.addNewProduct(inputProductData);
+        warehouse.addNewProduct(inputProductData);
         List<ProductRecord> products = warehouse.getProductListRecord();
         products.forEach(System.out::println);
     }

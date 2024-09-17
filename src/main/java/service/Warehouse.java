@@ -14,12 +14,12 @@ import java.util.stream.Collectors;
 public class Warehouse {
     private final ProductList productList;
 
-//    public Warehouse(ProductList productList) {
-//        this.productList = productList;
-//    }
-
     public Warehouse() {
         this.productList = new ProductList(List.of());
+    }
+
+    public Warehouse(ProductList productList) {
+        this.productList = new ProductList(productList.products());
     }
 
     public ProductRecord createNewProduct(InputProductData inputProductData) {
@@ -69,26 +69,34 @@ public class Warehouse {
         return groupingProducts(ProductRecord::createdAt, productList.products());
     }
 
+    public Map<LocalDate, List<ProductRecord>> getProductsPerUpdatedAt() {
+        return groupingProducts(ProductRecord::updatedAt, productList.products());
+    }
+
     public record ProductDatesToCompareRecord(LocalDate dateOne, LocalDate dateTwo) {
         public static boolean isDateAfter(LocalDate dateOne, LocalDate dateTwo) {
             return dateOne.isAfter(dateTwo);
         }
     }
 
-    public List<ProductRecord> getFilteredProductsByDate(LocalDate dateOne, LocalDate dateTwo) {
+    public List<ProductRecord> getFilteredProductsByDate(LocalDate dateTwo) {
         Map<LocalDate, List<ProductRecord>> allProductsCreatedAfter = getProductsPerCreatedAt();
         return allProductsCreatedAfter.entrySet().stream()
-                .filter(_ -> ProductDatesToCompareRecord.isDateAfter(dateOne, dateTwo))
+                .filter(entry -> ProductDatesToCompareRecord.isDateAfter(entry.getKey(), dateTwo))
                 .flatMap(entry -> entry.getValue().stream())
                 .toList();
     }
 
-    public List<ProductRecord> getAllProductsCreatedAfterADate(LocalDate createdAt, LocalDate dateToCompare) {
-        return getFilteredProductsByDate(createdAt, dateToCompare);
+    public List<ProductRecord> getAllProductsCreatedAfterADate(LocalDate dateToCompare) {
+        return getFilteredProductsByDate(dateToCompare);
     }
 
-    public List<ProductRecord> getAllUpdatedProducts(LocalDate updatedAt, LocalDate createdAt) {
-        return getFilteredProductsByDate(createdAt, updatedAt);
+    public List<ProductRecord> getAllUpdatedProducts() {
+        Map<LocalDate, List<ProductRecord>> allUpdatedProducts = getProductsPerUpdatedAt();
+        return allUpdatedProducts.entrySet().stream()
+                .flatMap(entry -> entry.getValue().stream())
+                .filter(product -> ProductDatesToCompareRecord.isDateAfter(product.updatedAt(), product.createdAt()))
+                .toList();
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////
