@@ -64,6 +64,20 @@ public class Warehouse {
         return productsPerId.getOrDefault(id, List.of());
     }
 
+    public ProductRecord changeProductNameCategoryRating(UUID id, InputProductData inputProductData) {
+        List<ProductRecord> currentProductRecord = getAProductForItsId(id);
+        ProductRecord productRecord = currentProductRecord.getFirst();
+
+        return new ProductRecord(
+                productRecord.id(),
+                inputProductData.name(),
+                inputProductData.category(),
+                inputProductData.rating(),
+                productRecord.createdAt(),
+                LocalDate.now()
+        );
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////////
     public Map<LocalDate, List<ProductRecord>> getProductsPerCreatedAt() {
         return groupingProducts(ProductRecord::createdAt, productList.products());
@@ -142,25 +156,17 @@ public class Warehouse {
     }
 
     public record NumberOfProductsPerCategoryRecord(Category category, long numberOfProducts) {
-        public NumberOfProductsPerCategoryRecord(Map.Entry<Category, Long> entry) {
-            this(entry.getKey(), entry.getValue());
-        }
-
         public static boolean categoryHasProducts(Map.Entry<Category, Long> entry) {
-            return entry.getValue() > 0;
-        }
-
-        public static Comparator<NumberOfProductsPerCategoryRecord> comparingByNumberOfProducts() {
-            return Comparator.comparing(NumberOfProductsPerCategoryRecord::numberOfProducts);
+            return entry.getValue() >= 1;
         }
     }
 
-    public List<NumberOfProductsPerCategoryRecord> getAllCategoriesWithProducts() {
+    public List<Category> getAllCategoriesWithProducts() {
         Map<Category, Long> numberOfProductsPerCategory = getNumberOfProductsPerCategory();
 
         return numberOfProductsPerCategory.entrySet().stream()
                 .filter(NumberOfProductsPerCategoryRecord::categoryHasProducts)
-                .map(NumberOfProductsPerCategoryRecord::new)
+                .map(Map.Entry::getKey)
                 .toList();
     }
 
@@ -173,12 +179,12 @@ public class Warehouse {
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////
-    public Map<Month, List<ProductRecord>> getProductsPerMonth() {
+    public Map<Month, List<ProductRecord>> getProductsPerCreatedAtMonth() {
         return groupingProducts(product -> product.createdAt().getMonth(), productList.products());
     }
 
     public List<ProductRecord> getProductsForAMonth(Month month) {
-        Map<Month, List<ProductRecord>> productsPerMonth = getProductsPerMonth();
+        Map<Month, List<ProductRecord>> productsPerMonth = getProductsPerCreatedAtMonth();
         return productsPerMonth.getOrDefault(month, List.of());
     }
 
@@ -192,8 +198,8 @@ public class Warehouse {
         }
     }
 
-    public List<ProductRecord> getSortedProductsWithMaxRatingForThisMonth() {
-        Month currentMonth = LocalDate.now().getMonth();
+    public List<ProductRecord> getSortedProductsWithMaxRatingForThisMonthByCreatedAt(CurrentMonthRecord currentMonthRecord) {
+        Month currentMonth = currentMonthRecord.currentMonth();
         List<ProductRecord> productsForAMonth = getProductsForAMonth(currentMonth);
 
         final double maxRating = getMaxRating(productsForAMonth);
@@ -202,6 +208,12 @@ public class Warehouse {
                 .filter(product -> ProductsPerMonthRecord.productHasMaxRating(product, maxRating))
                 .sorted(ProductsPerMonthRecord.comparingByLocalDate().reversed())
                 .toList();
+    }
+
+    public record CurrentMonthRecord(Month currentMonth) {
+        public CurrentMonthRecord() {
+            this(LocalDate.now().getMonth());
+        }
     }
 
     private static double getMaxRating(List<ProductRecord> productsForAMonth) {
