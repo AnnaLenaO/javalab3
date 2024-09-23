@@ -37,7 +37,7 @@ public class Warehouse {
         productList.addProduct(createNewProduct(inputProductData));
     }
 
-    public List<Product> getProductListRecord() {
+    public List<Product> getProductList() {
         return Collections.unmodifiableList(productList.products());
     }
 
@@ -89,7 +89,7 @@ public class Warehouse {
         return groupingProducts(Product::updatedAt, productList.products());
     }
 
-    public record ProductDatesToCompareRecord(LocalDate dateOne, LocalDate dateTwo) {
+    public record ProductDatesToCompare(LocalDate dateOne, LocalDate dateTwo) {
         public static boolean isDateAfter(LocalDate dateOne, LocalDate dateTwo) {
             return dateOne.isAfter(dateTwo);
         }
@@ -98,7 +98,7 @@ public class Warehouse {
     public List<Product> getFilteredProductsByDate(LocalDate dateTwo) {
         Map<LocalDate, List<Product>> allProductsCreatedAfter = getProductsPerCreatedAt();
         return allProductsCreatedAfter.entrySet().stream()
-                .filter(entry -> ProductDatesToCompareRecord.isDateAfter(entry.getKey(), dateTwo))
+                .filter(entry -> ProductDatesToCompare.isDateAfter(entry.getKey(), dateTwo))
                 .flatMap(entry -> entry.getValue().stream())
                 .toList();
     }
@@ -107,7 +107,7 @@ public class Warehouse {
         Map<LocalDate, List<Product>> allUpdatedProducts = getProductsPerUpdatedAt();
         return allUpdatedProducts.entrySet().stream()
                 .flatMap(entry -> entry.getValue().stream())
-                .filter(product -> ProductDatesToCompareRecord.isDateAfter(product.updatedAt(), product.createdAt()))
+                .filter(product -> ProductDatesToCompare.isDateAfter(product.updatedAt(), product.createdAt()))
                 .toList();
     }
 
@@ -116,19 +116,19 @@ public class Warehouse {
         return groupingProducts(Product::category, productList.products());
     }
 
-    public record ProductsPerProductRecord(List<Product> productRecord) {
-        public ProductsPerProductRecord(List<Product> productRecord) {
-            this.productRecord = List.copyOf(productRecord);
+    public record SortedProducts(List<Product> product) {
+        public SortedProducts(List<Product> product) {
+            this.product = List.copyOf(product);
         }
 
-        public static boolean productHasFirstLetter(Product productRecord) {
-            char firstLetter = Character.toLowerCase(getCharAt(productRecord));
+        public static boolean productHasFirstLetter(Product product) {
+            char firstLetter = Character.toLowerCase(getCharAt(product));
 
             return Character.isLetter(firstLetter) && (firstLetter >= 'a' && firstLetter <= 'z');
         }
 
-        private static char getCharAt(Product productRecord) {
-            return productRecord.name().charAt(0);
+        private static char getCharAt(Product product) {
+            return product.name().charAt(0);
         }
 
         public static Comparator<Product> comparingByNameOfProducts() {
@@ -136,14 +136,14 @@ public class Warehouse {
         }
     }
 
-    public ProductsPerProductRecord getSortedProductsForACategory(Category category) {
+    public SortedProducts getSortedProductsForACategory(Category category) {
         List<Product> productsForACategory = getProductsPerCategory().get(category);
 
         return productsForACategory.stream()
-                .filter(ProductsPerProductRecord::productHasFirstLetter)
-                .sorted(ProductsPerProductRecord.comparingByNameOfProducts())
+                .filter(SortedProducts::productHasFirstLetter)
+                .sorted(SortedProducts.comparingByNameOfProducts())
                 .collect(Collectors.collectingAndThen(
-                        Collectors.toList(), ProductsPerProductRecord::new)
+                        Collectors.toList(), SortedProducts::new)
                 );
     }
 
@@ -157,7 +157,7 @@ public class Warehouse {
         return numberOfProductsPerCategory.getOrDefault(category, 0L);
     }
 
-    public record NumberOfProductsPerCategoryRecord(Category category, long numberOfProducts) {
+    public record NumberOfProductsPerCategory(Category category, long numberOfProducts) {
         public static boolean categoryHasProducts(Map.Entry<Category, Long> entry) {
             return entry.getValue() >= 1;
         }
@@ -167,16 +167,16 @@ public class Warehouse {
         Map<Category, Long> numberOfProductsPerCategory = getNumberOfProductsPerCategory();
 
         return numberOfProductsPerCategory.entrySet().stream()
-                .filter(NumberOfProductsPerCategoryRecord::categoryHasProducts)
+                .filter(NumberOfProductsPerCategory::categoryHasProducts)
                 .map(Map.Entry::getKey)
                 .toList();
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////
     public Map<Character, List<Product>> getProductsPerFirstLetter() {
-        return groupingProducts(ProductsPerProductRecord::getCharAt,
+        return groupingProducts(SortedProducts::getCharAt,
                 productList.products().stream()
-                        .filter(ProductsPerProductRecord::productHasFirstLetter)
+                        .filter(SortedProducts::productHasFirstLetter)
                         .collect(Collectors.toList()));
     }
 
@@ -190,9 +190,9 @@ public class Warehouse {
         return productsPerMonth.getOrDefault(month, List.of());
     }
 
-    record ProductsPerMonthRecord(Month month, List<Product> productRecord) {
-        public static boolean productHasMaxRating(Product productRecord, double maxRating) {
-            return productRecord.rating() == maxRating;
+    record ProductsPerMonth(Month month, List<Product> products) {
+        public static boolean productHasMaxRating(Product product, double maxRating) {
+            return product.rating() == maxRating;
         }
 
         public static Comparator<Product> comparingByLocalDate() {
@@ -200,20 +200,20 @@ public class Warehouse {
         }
     }
 
-    public List<Product> getSortedProductsWithMaxRatingForThisMonthByCreatedAt(CurrentMonthRecord currentMonthRecord) {
-        Month currentMonth = currentMonthRecord.currentMonth();
+    public List<Product> getSortedProductsWithMaxRatingForThisMonthByCreatedAt(ThisMonth thisMonth) {
+        Month currentMonth = thisMonth.currentMonth();
         List<Product> productsForAMonth = getProductsForAMonth(currentMonth);
 
         final double maxRating = getMaxRating(productsForAMonth);
 
         return productsForAMonth.stream()
-                .filter(product -> ProductsPerMonthRecord.productHasMaxRating(product, maxRating))
-                .sorted(ProductsPerMonthRecord.comparingByLocalDate().reversed())
+                .filter(product -> ProductsPerMonth.productHasMaxRating(product, maxRating))
+                .sorted(ProductsPerMonth.comparingByLocalDate().reversed())
                 .toList();
     }
 
-    public record CurrentMonthRecord(Month currentMonth) {
-        public CurrentMonthRecord() {
+    public record ThisMonth(Month currentMonth) {
+        public ThisMonth() {
             this(LocalDate.now().getMonth());
         }
     }

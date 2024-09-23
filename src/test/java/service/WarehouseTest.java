@@ -55,9 +55,9 @@ class WarehouseTest {
 
         warehouse.addNewProduct(inputProductData);
         Product createdProductRecord = warehouse.createNewProduct(inputProductData);
-        List<Product> returnedProductRecord = warehouse.getProductListRecord();
+        List<Product> returnedProductRecord = warehouse.getProductList();
 
-        assertThat(warehouse.getProductListRecord().size()).isGreaterThanOrEqualTo(1);
+        assertThat(warehouse.getProductList().size()).isGreaterThanOrEqualTo(1);
         assertThat(returnedProductRecord.getFirst().id()).isNotNull();
         assertThat(returnedProductRecord.getFirst().name()).isEqualTo(inputProductData.name());
         assertThat(returnedProductRecord.getFirst().category()).isEqualTo(inputProductData.category());
@@ -205,11 +205,11 @@ class WarehouseTest {
     @MethodSource("dateProvider")
     void testProductDatesToCompareRecord(LocalDate dateOne, LocalDate dateTwo, boolean resultExpected) {
 
-        Warehouse.ProductDatesToCompareRecord compareRecordContent =
-                new Warehouse.ProductDatesToCompareRecord(dateOne, dateTwo);
+        Warehouse.ProductDatesToCompare compareRecordContent =
+                new Warehouse.ProductDatesToCompare(dateOne, dateTwo);
 
         boolean testResultCompareRecord =
-                Warehouse.ProductDatesToCompareRecord.isDateAfter(dateOne, dateTwo);
+                Warehouse.ProductDatesToCompare.isDateAfter(dateOne, dateTwo);
 
         assertThat(compareRecordContent).isNotNull();
         assertThat(testResultCompareRecord).isEqualTo(resultExpected);
@@ -268,7 +268,7 @@ class WarehouseTest {
         ProductList productList = new ProductList(productListRecord);
         Warehouse warehouse = new Warehouse(productList);
 
-        List<Product> sortedTestResult = warehouse.getSortedProductsForACategory(RAMBLER).productRecord();
+        List<Product> sortedTestResult = warehouse.getSortedProductsForACategory(RAMBLER).product();
 
         assertThat(sortedTestResult).isNotNull();
         assertThat(sortedTestResult.size()).isEqualTo(3);
@@ -422,7 +422,7 @@ class WarehouseTest {
 
         ProductList productList = new ProductList(productListRecord);
         Warehouse warehouse = new Warehouse(productList);
-        Warehouse.CurrentMonthRecord currentMonthRecord = new Warehouse.CurrentMonthRecord(SEPTEMBER);
+        Warehouse.ThisMonth currentMonthRecord = new Warehouse.ThisMonth(SEPTEMBER);
 
         List<Product> sortedTestResult =
                 warehouse.getSortedProductsWithMaxRatingForThisMonthByCreatedAt(currentMonthRecord);
