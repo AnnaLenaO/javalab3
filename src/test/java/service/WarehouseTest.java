@@ -5,6 +5,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.aggregator.ArgumentsAccessor;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDate;
 import java.time.Month;
@@ -26,7 +27,7 @@ class WarehouseTest {
 
         Warehouse warehouse = new Warehouse();
 
-        ProductRecord newProduct = warehouse.createNewProduct(new InputProductData(
+        Product newProduct = warehouse.createNewProduct(new InputProductData(
                 arguments.getString(0),
                 arguments.get(1, Category.class),
                 arguments.getDouble(2)
@@ -54,10 +55,10 @@ class WarehouseTest {
         );
 
         warehouse.addNewProduct(inputProductData);
-        ProductRecord createdProductRecord = warehouse.createNewProduct(inputProductData);
-        List<ProductRecord> returnedProductRecord = warehouse.getProductListRecord();
+        Product createdProductRecord = warehouse.createNewProduct(inputProductData);
+        List<Product> returnedProductRecord = warehouse.getProductList();
 
-        assertThat(warehouse.getProductListRecord().size()).isGreaterThanOrEqualTo(1);
+        assertThat(warehouse.getProductList().size()).isGreaterThanOrEqualTo(1);
         assertThat(returnedProductRecord.getFirst().id()).isNotNull();
         assertThat(returnedProductRecord.getFirst().name()).isEqualTo(inputProductData.name());
         assertThat(returnedProductRecord.getFirst().category()).isEqualTo(inputProductData.category());
@@ -68,12 +69,13 @@ class WarehouseTest {
 
     @ParameterizedTest(name = "{index} - Group products per attribute")
     @MethodSource("productDataProvider")
-    void testGenericGroupingProducts(Function<ProductRecord, ?> function, List<ProductRecord> productList,
-                                     Map<?, List<ProductRecord>> groupedByProductDataProvider) {
+    void testGenericGroupingProducts(Function<Product, ?> function, List<Product> productList,
+                                     Map<?, List<Product>> groupedByProductDataProvider) {
 
         Warehouse warehouse = new Warehouse();
 
-        Map<?, List<ProductRecord>> groupedTestResult = warehouse.groupingProducts(function, productList);
+        Map<?, List<Product>> groupedTestResult =
+                ReflectionTestUtils.invokeMethod(warehouse, "groupingProducts", function, productList);
 
         assertThat(groupedTestResult).isNotNull();
         assertThat(groupedTestResult.size()).isGreaterThanOrEqualTo(1);
@@ -82,12 +84,13 @@ class WarehouseTest {
 
     @ParameterizedTest(name = "{index} - Group and count products per attribute")
     @MethodSource("productDataCountingProvider")
-    void testGenericGroupingAndCountingProducts(Function<ProductRecord, ?> function, List<ProductRecord> productList,
+    void testGenericGroupingAndCountingProducts(Function<Product, ?> function, List<Product> productList,
                                                 Map<?, Long> countedByProductDataProvider) {
 
         Warehouse warehouse = new Warehouse();
 
-        Map<?, Long> groupedTestResult = warehouse.numberOfGroupedProducts(function, productList);
+        Map<?, Long> groupedTestResult =
+                ReflectionTestUtils.invokeMethod(warehouse, "numberOfGroupedProducts", function, productList);
 
         assertThat(groupedTestResult).isNotNull();
         assertThat(groupedTestResult.size()).isGreaterThanOrEqualTo(1);
@@ -97,17 +100,17 @@ class WarehouseTest {
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     @ParameterizedTest(name = "Group products per id")
     @MethodSource("productListProvider")
-    void testGetProductsPerId(List<ProductRecord> productListRecord,
-                              Map<UUID, List<ProductRecord>> groupedByIdProviderExpected,
-                              Map<String, List<ProductRecord>> groupedByNameProviderExpected,
-                              Map<Category, List<ProductRecord>> groupedByCategoryProviderExpected,
-                              Map<LocalDate, List<ProductRecord>> groupedByCreatedAtProviderExpected,
-                              Map<LocalDate, List<ProductRecord>> groupedByUpdatedAtProviderExpected) {
+    void testGetProductsPerId(List<Product> productListRecord,
+                              Map<UUID, List<Product>> groupedByIdProviderExpected,
+                              Map<String, List<Product>> groupedByNameProviderExpected,
+                              Map<Category, List<Product>> groupedByCategoryProviderExpected,
+                              Map<LocalDate, List<Product>> groupedByCreatedAtProviderExpected,
+                              Map<LocalDate, List<Product>> groupedByUpdatedAtProviderExpected) {
 
         ProductList productList = new ProductList(productListRecord);
         Warehouse warehouse = new Warehouse(productList);
 
-        Map<UUID, List<ProductRecord>> groupedTestResult = warehouse.getProductsPerId();
+        Map<UUID, List<Product>> groupedTestResult = warehouse.getProductsPerId();
 
         assertThat(groupedTestResult).isNotNull();
         assertThat(groupedTestResult.size()).isEqualTo(8);
@@ -116,17 +119,17 @@ class WarehouseTest {
 
     @ParameterizedTest(name = "Group products per created at")
     @MethodSource("productListProvider")
-    void testGetProductsPerCreatedAt(List<ProductRecord> productListRecord,
-                                     Map<UUID, List<ProductRecord>> groupedByIdProviderExpected,
-                                     Map<String, List<ProductRecord>> groupedByNameProviderExpected,
-                                     Map<Category, List<ProductRecord>> groupedByCategoryProviderExpected,
-                                     Map<LocalDate, List<ProductRecord>> groupedByCreatedAtProviderExpected,
-                                     Map<LocalDate, List<ProductRecord>> groupedByUpdatedAtProviderExpected) {
+    void testGetProductsPerCreatedAt(List<Product> productListRecord,
+                                     Map<UUID, List<Product>> groupedByIdProviderExpected,
+                                     Map<String, List<Product>> groupedByNameProviderExpected,
+                                     Map<Category, List<Product>> groupedByCategoryProviderExpected,
+                                     Map<LocalDate, List<Product>> groupedByCreatedAtProviderExpected,
+                                     Map<LocalDate, List<Product>> groupedByUpdatedAtProviderExpected) {
 
         ProductList productList = new ProductList(productListRecord);
         Warehouse warehouse = new Warehouse(productList);
 
-        Map<LocalDate, List<ProductRecord>> groupedTestResult = warehouse.getProductsPerCreatedAt();
+        Map<LocalDate, List<Product>> groupedTestResult = warehouse.getProductsPerCreatedAt();
 
         assertThat(groupedTestResult).isNotNull();
         assertThat(groupedTestResult.size()).isEqualTo(5);
@@ -135,17 +138,17 @@ class WarehouseTest {
 
     @ParameterizedTest(name = "Group products per category")
     @MethodSource("productListProvider")
-    void testGetProductsPerCategory(List<ProductRecord> productListRecord,
-                                    Map<UUID, List<ProductRecord>> groupedByIdProviderExpected,
-                                    Map<String, List<ProductRecord>> groupedByNameProviderExpected,
-                                    Map<Category, List<ProductRecord>> groupedByCategoryProviderExpected,
-                                    Map<LocalDate, List<ProductRecord>> groupedByCreatedAtProviderExpected,
-                                    Map<LocalDate, List<ProductRecord>> groupedByUpdatedAtProviderExpected) {
+    void testGetProductsPerCategory(List<Product> productListRecord,
+                                    Map<UUID, List<Product>> groupedByIdProviderExpected,
+                                    Map<String, List<Product>> groupedByNameProviderExpected,
+                                    Map<Category, List<Product>> groupedByCategoryProviderExpected,
+                                    Map<LocalDate, List<Product>> groupedByCreatedAtProviderExpected,
+                                    Map<LocalDate, List<Product>> groupedByUpdatedAtProviderExpected) {
 
         ProductList productList = new ProductList(productListRecord);
         Warehouse warehouse = new Warehouse(productList);
 
-        Map<Category, List<ProductRecord>> groupedTestResult = warehouse.getProductsPerCategory();
+        Map<Category, List<Product>> groupedTestResult = warehouse.getProductsPerCategory();
 
         assertThat(groupedTestResult).isNotNull();
         assertThat(groupedTestResult.size()).isEqualTo(5);
@@ -154,32 +157,24 @@ class WarehouseTest {
 
     @ParameterizedTest(name = "Product for an id")
     @MethodSource("productListProvider")
-    void testGetProductForItsId(List<ProductRecord> productListRecord) {
+    void testGetProductForItsId(List<Product> productListRecord) {
 
         ProductList productList = new ProductList(productListRecord);
         Warehouse warehouse = new Warehouse(productList);
         UUID productId = UUID.fromString("e1c63601-999c-48d8-8900-cbc4b870db2e");
 
-        List<ProductRecord> singleTestResult = warehouse.getAProductForItsId(productId);
+        Optional<Product> singleTestResult = warehouse.getAProductForItsId(productId);
 
         assertThat(singleTestResult).isNotNull();
-        assertThat(singleTestResult.size()).isEqualTo(1);
-        assertThat(singleTestResult)
-                .extracting("id")
-                .singleElement()
-                .isEqualTo(productId);
-        assertThat(singleTestResult)
-                .extracting("name")
-                .singleElement()
-                .isEqualTo("Wasagaming");
-        assertThat(singleTestResult)
-                .extracting("name")
-                .containsOnlyOnce("Wasagaming");
+        assertThat(singleTestResult.isPresent()).isTrue();
+        assertThat((singleTestResult.get()).id()).isEqualTo(productId);
+        assertThat((singleTestResult.get()).name()).isEqualTo("Wasagaming");
+        assertThat((singleTestResult.get()).name()).containsOnlyOnce("Wasagaming");
     }
 
     @ParameterizedTest(name = "Change product name, category & rating")
     @MethodSource("productListProvider")
-    void testChangeProductNameCategoryRating(List<ProductRecord> productListRecord) {
+    void testChangeProductNameCategoryRating(List<Product> productListRecord) {
 
         ProductList productList = new ProductList(productListRecord);
         Warehouse warehouse = new Warehouse(productList);
@@ -191,7 +186,7 @@ class WarehouseTest {
                 10.0
         );
 
-        ProductRecord singleTestResult =
+        Product singleTestResult =
                 warehouse.changeProductNameCategoryRating(productId, inputProductData);
 
         assertThat(singleTestResult).isNotNull();
@@ -213,11 +208,11 @@ class WarehouseTest {
     @MethodSource("dateProvider")
     void testProductDatesToCompareRecord(LocalDate dateOne, LocalDate dateTwo, boolean resultExpected) {
 
-        Warehouse.ProductDatesToCompareRecord compareRecordContent =
-                new Warehouse.ProductDatesToCompareRecord(dateOne, dateTwo);
+        Warehouse.ProductDatesToCompare compareRecordContent =
+                new Warehouse.ProductDatesToCompare(dateOne, dateTwo);
 
         boolean testResultCompareRecord =
-                Warehouse.ProductDatesToCompareRecord.isDateAfter(dateOne, dateTwo);
+                Warehouse.ProductDatesToCompare.isDateAfter(dateOne, dateTwo);
 
         assertThat(compareRecordContent).isNotNull();
         assertThat(testResultCompareRecord).isEqualTo(resultExpected);
@@ -225,12 +220,12 @@ class WarehouseTest {
 
     @ParameterizedTest(name = "Filter products created after a date")
     @MethodSource("productListProvider")
-    void testGetFilteredProductsByDate(List<ProductRecord> productListRecord) {
+    void testGetFilteredProductsByDate(List<Product> productListRecord) {
 
         ProductList productList = new ProductList(productListRecord);
         Warehouse warehouse = new Warehouse(productList);
         LocalDate dateTwo = LocalDate.parse("2024-02-10");
-        List<ProductRecord> filteredTestResult = warehouse.getFilteredProductsByDate(dateTwo);
+        List<Product> filteredTestResult = warehouse.getFilteredProductsByDate(dateTwo);
 
         assertThat(filteredTestResult).isNotNull();
         assertThat(filteredTestResult.size()).isEqualTo(5);
@@ -247,11 +242,11 @@ class WarehouseTest {
 
     @ParameterizedTest(name = "Filter all updated products")
     @MethodSource("productListProvider")
-    void testGetAllUpdatedProducts(List<ProductRecord> productListRecord) {
+    void testGetAllUpdatedProducts(List<Product> productListRecord) {
 
         ProductList productList = new ProductList(productListRecord);
         Warehouse warehouse = new Warehouse(productList);
-        List<ProductRecord> filteredTestResult = warehouse.getAllUpdatedProducts();
+        List<Product> filteredTestResult = warehouse.getAllUpdatedProducts();
 
         assertThat(filteredTestResult).isNotNull();
         assertThat(filteredTestResult.size()).isEqualTo(5);
@@ -271,12 +266,12 @@ class WarehouseTest {
 
     @ParameterizedTest(name = "Sort products for a category")
     @MethodSource("productListProvider")
-    void testGetSortedProductsForACategory(List<ProductRecord> productListRecord) {
+    void testGetSortedProductsForACategory(List<Product> productListRecord) {
 
         ProductList productList = new ProductList(productListRecord);
         Warehouse warehouse = new Warehouse(productList);
 
-        List<ProductRecord> sortedTestResult = warehouse.getSortedProductsForACategory(RAMBLER).productRecord();
+        List<Product> sortedTestResult = warehouse.getSortedProductsForACategory(RAMBLER).product();
 
         assertThat(sortedTestResult).isNotNull();
         assertThat(sortedTestResult.size()).isEqualTo(3);
@@ -290,7 +285,7 @@ class WarehouseTest {
 
     @ParameterizedTest(name = "Number of products per category")
     @MethodSource("productListProvider")
-    void testGetNumberOfProductsPerCategory(List<ProductRecord> productListRecord) {
+    void testGetNumberOfProductsPerCategory(List<Product> productListRecord) {
 
         ProductList productList = new ProductList(productListRecord);
         Warehouse warehouse = new Warehouse(productList);
@@ -309,7 +304,7 @@ class WarehouseTest {
 
     @ParameterizedTest(name = "Number of products for a category")
     @MethodSource("productListProvider")
-    void testGetNumberOfProductsForACategory(List<ProductRecord> productListRecord) {
+    void testGetNumberOfProductsForACategory(List<Product> productListRecord) {
 
         ProductList productList = new ProductList(productListRecord);
         Warehouse warehouse = new Warehouse(productList);
@@ -330,7 +325,7 @@ class WarehouseTest {
 
     @ParameterizedTest(name = "All categories with products")
     @MethodSource("productListProvider")
-    void testGetAllCategoriesWithProducts(List<ProductRecord> productListRecord) {
+    void testGetAllCategoriesWithProducts(List<Product> productListRecord) {
 
         ProductList productList = new ProductList(productListRecord);
         Warehouse warehouse = new Warehouse(productList);
@@ -345,12 +340,12 @@ class WarehouseTest {
 
     @ParameterizedTest(name = "Grouped products per unique first letter")
     @MethodSource("productListProvider")
-    void testGetProductsPerFirstLetter(List<ProductRecord> productListRecord) {
+    void testGetProductsPerFirstLetter(List<Product> productListRecord) {
 
         ProductList productList = new ProductList(productListRecord);
         Warehouse warehouse = new Warehouse(productList);
 
-        Map<Character, List<ProductRecord>> productsPerFirstLetterResult =
+        Map<Character, List<Product>> productsPerFirstLetterResult =
                 warehouse.getProductsPerFirstLetter();
 
         assertThat(productsPerFirstLetterResult).isNotNull();
@@ -368,12 +363,12 @@ class WarehouseTest {
 
     @ParameterizedTest(name = "Grouped products per month by createdAt")
     @MethodSource("productListProvider")
-    void testGetProductsPerCreatedAtMonth(List<ProductRecord> productListRecord) {
+    void testGetProductsPerCreatedAtMonth(List<Product> productListRecord) {
 
         ProductList productList = new ProductList(productListRecord);
         Warehouse warehouse = new Warehouse(productList);
 
-        Map<Month, List<ProductRecord>> productsPerMonthResult =
+        Map<Month, List<Product>> productsPerMonthResult =
                 warehouse.getProductsPerCreatedAtMonth();
 
         assertThat(productsPerMonthResult).isNotNull();
@@ -399,15 +394,15 @@ class WarehouseTest {
 
     @ParameterizedTest(name = "Grouped products for a month by createdAt")
     @MethodSource("productListProvider")
-    void testGetProductsForAMonth(List<ProductRecord> productListRecord) {
+    void testGetProductsForAMonth(List<Product> productListRecord) {
 
         ProductList productList = new ProductList(productListRecord);
         Warehouse warehouse = new Warehouse(productList);
 
-        List<ProductRecord> productForAMonthResultA = warehouse.getProductsForAMonth(Month.FEBRUARY);
-        List<ProductRecord> productForAMonthResultB = warehouse.getProductsForAMonth(Month.JUNE);
-        List<ProductRecord> productForAMonthResultC = warehouse.getProductsForAMonth(SEPTEMBER);
-        List<ProductRecord> productForAMonthResultD = warehouse.getProductsForAMonth(Month.DECEMBER);
+        List<Product> productForAMonthResultA = warehouse.getProductsForAMonth(Month.FEBRUARY);
+        List<Product> productForAMonthResultB = warehouse.getProductsForAMonth(Month.JUNE);
+        List<Product> productForAMonthResultC = warehouse.getProductsForAMonth(SEPTEMBER);
+        List<Product> productForAMonthResultD = warehouse.getProductsForAMonth(Month.DECEMBER);
 
         assertThat(productForAMonthResultA).isNotNull().hasSize(3);
         assertThat(productForAMonthResultB).isNotNull().hasSize(1);
@@ -426,13 +421,13 @@ class WarehouseTest {
 
     @ParameterizedTest(name = "Sort products with max rating for a month by createdAt")
     @MethodSource("productListProvider")
-    void testGetSortedProductsWithMaxRatingForThisMonth(List<ProductRecord> productListRecord) {
+    void testGetSortedProductsWithMaxRatingForThisMonth(List<Product> productListRecord) {
 
         ProductList productList = new ProductList(productListRecord);
         Warehouse warehouse = new Warehouse(productList);
-        Warehouse.CurrentMonthRecord currentMonthRecord = new Warehouse.CurrentMonthRecord(SEPTEMBER);
+        Warehouse.ThisMonth currentMonthRecord = new Warehouse.ThisMonth(SEPTEMBER);
 
-        List<ProductRecord> sortedTestResult =
+        List<Product> sortedTestResult =
                 warehouse.getSortedProductsWithMaxRatingForThisMonthByCreatedAt(currentMonthRecord);
 
         assertThat(sortedTestResult).isNotNull();
@@ -461,32 +456,32 @@ class WarehouseTest {
     }
 
     static Stream<Arguments> productListProvider() {
-        List<ProductRecord> productListRecord = Arrays.asList(
-                new ProductRecord(UUID.fromString("bc108fc2-6785-40c4-9392-b0e93358b26e"), "Hippolyte",
+        List<Product> productListRecord = Arrays.asList(
+                new Product(UUID.fromString("bc108fc2-6785-40c4-9392-b0e93358b26e"), "Hippolyte",
                         GALLICA, 10.0, LocalDate.parse("2024-09-16"), LocalDate.parse("2024-09-16")),
-                new ProductRecord(UUID.fromString("51feaf5d-2972-44ec-a78a-5d8a8e1be1e9"), "Lyckefund",
+                new Product(UUID.fromString("51feaf5d-2972-44ec-a78a-5d8a8e1be1e9"), "Lyckefund",
                         RAMBLER, 8.7, LocalDate.parse("2024-02-10"), LocalDate.parse("2024-05-19")),
-                new ProductRecord(UUID.fromString("e1c63601-999c-48d8-8900-cbc4b870db2e"), "Wasagaming",
+                new Product(UUID.fromString("e1c63601-999c-48d8-8900-cbc4b870db2e"), "Wasagaming",
                         RUGOSA, 6.3, LocalDate.parse("2024-09-15"), LocalDate.parse("2024-09-16")),
-                new ProductRecord(UUID.fromString("4ae21842-25d3-43f2-b502-626a25ac8f96"), "New Dawn",
+                new Product(UUID.fromString("4ae21842-25d3-43f2-b502-626a25ac8f96"), "New Dawn",
                         RAMBLER, 9.1, LocalDate.parse("2024-06-10"), LocalDate.parse("2024-05-19")),
-                new ProductRecord(UUID.fromString("25c20fc8-7d2c-4a16-94e3-9e797ea8472c"), "Helenae Hybrida",
+                new Product(UUID.fromString("25c20fc8-7d2c-4a16-94e3-9e797ea8472c"), "Helenae Hybrida",
                         RAMBLER, 7.3, LocalDate.parse("2024-02-10"), LocalDate.parse("2024-07-19")),
-                new ProductRecord(UUID.fromString("1a39744d-fe31-46d4-bb2f-3a62353581dc"), "Duchesse De Montebello",
+                new Product(UUID.fromString("1a39744d-fe31-46d4-bb2f-3a62353581dc"), "Duchesse De Montebello",
                         GALLICA, 9.8, LocalDate.parse("2024-02-10"), LocalDate.parse("2024-06-04")),
-                new ProductRecord(UUID.fromString("4c00b99d-5106-4ebb-be9b-14c69b58b3a5"), "Louise Bugnet",
+                new Product(UUID.fromString("4c00b99d-5106-4ebb-be9b-14c69b58b3a5"), "Louise Bugnet",
                         CANADIAN, 10.0, LocalDate.parse("2024-09-01"), LocalDate.parse("2024-09-01")),
-                new ProductRecord(UUID.fromString("aad34fe5-9994-42e6-baa9-e6d42340627c"), "Ispahan",
+                new Product(UUID.fromString("aad34fe5-9994-42e6-baa9-e6d42340627c"), "Ispahan",
                         DAMASCENE, 9.9, LocalDate.parse("2024-09-01"), LocalDate.parse("2024-09-04"))
         );
 
-        Map<UUID, List<ProductRecord>> groupedByIdProviderExpected = new HashMap<>();
-        Map<String, List<ProductRecord>> groupedByNameProviderExpected = new HashMap<>();
-        Map<Category, List<ProductRecord>> groupedByCategoryProviderExpected = new HashMap<>();
-        Map<LocalDate, List<ProductRecord>> groupedByCreatedAtProviderExpected = new HashMap<>();
-        Map<LocalDate, List<ProductRecord>> groupedByUpdatedAtProviderExpected = new HashMap<>();
+        Map<UUID, List<Product>> groupedByIdProviderExpected = new HashMap<>();
+        Map<String, List<Product>> groupedByNameProviderExpected = new HashMap<>();
+        Map<Category, List<Product>> groupedByCategoryProviderExpected = new HashMap<>();
+        Map<LocalDate, List<Product>> groupedByCreatedAtProviderExpected = new HashMap<>();
+        Map<LocalDate, List<Product>> groupedByUpdatedAtProviderExpected = new HashMap<>();
 
-        for (ProductRecord productRecord : productListRecord) {
+        for (Product productRecord : productListRecord) {
             groupedByIdProviderExpected.computeIfAbsent(productRecord.id(), k -> new ArrayList<>()).add(productRecord);
             groupedByNameProviderExpected.computeIfAbsent(productRecord.name(), k -> new ArrayList<>()).add(productRecord);
             groupedByCategoryProviderExpected.computeIfAbsent(productRecord.category(), k -> new ArrayList<>()).add(productRecord);
@@ -502,32 +497,32 @@ class WarehouseTest {
     }
 
     static Stream<Arguments> productDataProvider() {
-        List<ProductRecord> productListRecord = Arrays.asList(
-                new ProductRecord(UUID.fromString("bc108fc2-6785-40c4-9392-b0e93358b26e"), "Hippolyte",
+        List<Product> productListRecord = Arrays.asList(
+                new Product(UUID.fromString("bc108fc2-6785-40c4-9392-b0e93358b26e"), "Hippolyte",
                         GALLICA, 10.0, LocalDate.parse("2024-09-16"), LocalDate.parse("2024-09-16")),
-                new ProductRecord(UUID.fromString("51feaf5d-2972-44ec-a78a-5d8a8e1be1e9"), "Lyckefund",
+                new Product(UUID.fromString("51feaf5d-2972-44ec-a78a-5d8a8e1be1e9"), "Lyckefund",
                         RAMBLER, 8.7, LocalDate.parse("2024-02-10"), LocalDate.parse("2024-05-19")),
-                new ProductRecord(UUID.fromString("e1c63601-999c-48d8-8900-cbc4b870db2e"), "Wasagaming",
+                new Product(UUID.fromString("e1c63601-999c-48d8-8900-cbc4b870db2e"), "Wasagaming",
                         RUGOSA, 6.3, LocalDate.parse("2024-09-15"), LocalDate.parse("2024-09-16")),
-                new ProductRecord(UUID.fromString("4ae21842-25d3-43f2-b502-626a25ac8f96"), "New Dawn",
+                new Product(UUID.fromString("4ae21842-25d3-43f2-b502-626a25ac8f96"), "New Dawn",
                         RAMBLER, 9.1, LocalDate.parse("2024-06-10"), LocalDate.parse("2024-05-19")),
-                new ProductRecord(UUID.fromString("25c20fc8-7d2c-4a16-94e3-9e797ea8472c"), "Helenae Hybrida",
+                new Product(UUID.fromString("25c20fc8-7d2c-4a16-94e3-9e797ea8472c"), "Helenae Hybrida",
                         RAMBLER, 7.3, LocalDate.parse("2024-02-10"), LocalDate.parse("2024-07-19")),
-                new ProductRecord(UUID.fromString("1a39744d-fe31-46d4-bb2f-3a62353581dc"), "Duchesse De Montebello",
+                new Product(UUID.fromString("1a39744d-fe31-46d4-bb2f-3a62353581dc"), "Duchesse De Montebello",
                         GALLICA, 9.8, LocalDate.parse("2024-02-10"), LocalDate.parse("2024-06-04")),
-                new ProductRecord(UUID.fromString("4c00b99d-5106-4ebb-be9b-14c69b58b3a5"), "Louise Bugnet",
+                new Product(UUID.fromString("4c00b99d-5106-4ebb-be9b-14c69b58b3a5"), "Louise Bugnet",
                         CANADIAN, 10.0, LocalDate.parse("2024-09-01"), LocalDate.parse("2024-09-01")),
-                new ProductRecord(UUID.fromString("aad34fe5-9994-42e6-baa9-e6d42340627c"), "Ispahan",
+                new Product(UUID.fromString("aad34fe5-9994-42e6-baa9-e6d42340627c"), "Ispahan",
                         DAMASCENE, 9.9, LocalDate.parse("2024-09-01"), LocalDate.parse("2024-09-04"))
         );
 
-        Map<UUID, List<ProductRecord>> groupedByIdProviderExpected = new HashMap<>();
-        Map<String, List<ProductRecord>> groupedByNameProviderExpected = new HashMap<>();
-        Map<Category, List<ProductRecord>> groupedByCategoryProviderExpected = new HashMap<>();
-        Map<LocalDate, List<ProductRecord>> groupedByCreatedAtProviderExpected = new HashMap<>();
-        Map<LocalDate, List<ProductRecord>> groupedByUpdatedAtProviderExpected = new HashMap<>();
+        Map<UUID, List<Product>> groupedByIdProviderExpected = new HashMap<>();
+        Map<String, List<Product>> groupedByNameProviderExpected = new HashMap<>();
+        Map<Category, List<Product>> groupedByCategoryProviderExpected = new HashMap<>();
+        Map<LocalDate, List<Product>> groupedByCreatedAtProviderExpected = new HashMap<>();
+        Map<LocalDate, List<Product>> groupedByUpdatedAtProviderExpected = new HashMap<>();
 
-        for (ProductRecord productRecord : productListRecord) {
+        for (Product productRecord : productListRecord) {
             groupedByIdProviderExpected.computeIfAbsent(productRecord.id(), k -> new ArrayList<>()).add(productRecord);
             groupedByNameProviderExpected.computeIfAbsent(productRecord.name(), k -> new ArrayList<>()).add(productRecord);
             groupedByCategoryProviderExpected.computeIfAbsent(productRecord.category(), k -> new ArrayList<>()).add(productRecord);
@@ -536,60 +531,60 @@ class WarehouseTest {
         }
 
         return Stream.of(
-                arguments((Function<ProductRecord, UUID>) ProductRecord::id, productListRecord,
+                arguments((Function<Product, UUID>) Product::id, productListRecord,
                         groupedByIdProviderExpected),
-                arguments((Function<ProductRecord, String>) ProductRecord::name, productListRecord,
+                arguments((Function<Product, String>) Product::name, productListRecord,
                         groupedByNameProviderExpected),
-                arguments((Function<ProductRecord, Category>) ProductRecord::category, productListRecord,
+                arguments((Function<Product, Category>) Product::category, productListRecord,
                         groupedByCategoryProviderExpected),
-                arguments((Function<ProductRecord, LocalDate>) ProductRecord::createdAt, productListRecord,
+                arguments((Function<Product, LocalDate>) Product::createdAt, productListRecord,
                         groupedByCreatedAtProviderExpected),
-                arguments((Function<ProductRecord, LocalDate>) ProductRecord::updatedAt, productListRecord,
+                arguments((Function<Product, LocalDate>) Product::updatedAt, productListRecord,
                         groupedByUpdatedAtProviderExpected)
         );
     }
 
     static Stream<Arguments> productDataCountingProvider() {
-        List<ProductRecord> productListRecord = Arrays.asList(
-                new ProductRecord(UUID.fromString("bc108fc2-6785-40c4-9392-b0e93358b26e"), "Hippolyte",
+        List<Product> productListRecord = Arrays.asList(
+                new Product(UUID.fromString("bc108fc2-6785-40c4-9392-b0e93358b26e"), "Hippolyte",
                         GALLICA, 10.0, LocalDate.parse("2024-09-16"), LocalDate.parse("2024-09-16")),
-                new ProductRecord(UUID.fromString("51feaf5d-2972-44ec-a78a-5d8a8e1be1e9"), "Lyckefund",
+                new Product(UUID.fromString("51feaf5d-2972-44ec-a78a-5d8a8e1be1e9"), "Lyckefund",
                         RAMBLER, 8.7, LocalDate.parse("2024-02-10"), LocalDate.parse("2024-05-19")),
-                new ProductRecord(UUID.fromString("e1c63601-999c-48d8-8900-cbc4b870db2e"), "Wasagaming",
+                new Product(UUID.fromString("e1c63601-999c-48d8-8900-cbc4b870db2e"), "Wasagaming",
                         RUGOSA, 6.3, LocalDate.parse("2024-09-15"), LocalDate.parse("2024-09-16")),
-                new ProductRecord(UUID.fromString("4ae21842-25d3-43f2-b502-626a25ac8f96"), "New Dawn",
+                new Product(UUID.fromString("4ae21842-25d3-43f2-b502-626a25ac8f96"), "New Dawn",
                         RAMBLER, 9.1, LocalDate.parse("2024-06-10"), LocalDate.parse("2024-05-19")),
-                new ProductRecord(UUID.fromString("25c20fc8-7d2c-4a16-94e3-9e797ea8472c"), "Helenae Hybrida",
+                new Product(UUID.fromString("25c20fc8-7d2c-4a16-94e3-9e797ea8472c"), "Helenae Hybrida",
                         RAMBLER, 7.3, LocalDate.parse("2024-02-10"), LocalDate.parse("2024-07-19")),
-                new ProductRecord(UUID.fromString("1a39744d-fe31-46d4-bb2f-3a62353581dc"), "Duchesse De Montebello",
+                new Product(UUID.fromString("1a39744d-fe31-46d4-bb2f-3a62353581dc"), "Duchesse De Montebello",
                         GALLICA, 9.8, LocalDate.parse("2024-02-10"), LocalDate.parse("2024-06-04")),
-                new ProductRecord(UUID.fromString("4c00b99d-5106-4ebb-be9b-14c69b58b3a5"), "Louise Bugnet",
+                new Product(UUID.fromString("4c00b99d-5106-4ebb-be9b-14c69b58b3a5"), "Louise Bugnet",
                         CANADIAN, 10.0, LocalDate.parse("2024-09-01"), LocalDate.parse("2024-09-01")),
-                new ProductRecord(UUID.fromString("aad34fe5-9994-42e6-baa9-e6d42340627c"), "Ispahan",
+                new Product(UUID.fromString("aad34fe5-9994-42e6-baa9-e6d42340627c"), "Ispahan",
                         DAMASCENE, 9.9, LocalDate.parse("2024-09-01"), LocalDate.parse("2024-09-04"))
         );
 
         Map<UUID, Long> countedByIdProviderExpected = productListRecord.stream()
-                .collect(Collectors.groupingBy(ProductRecord::id, Collectors.counting()));
+                .collect(Collectors.groupingBy(Product::id, Collectors.counting()));
         Map<String, Long> countedByNameProviderExpected = productListRecord.stream()
-                .collect(Collectors.groupingBy(ProductRecord::name, Collectors.counting()));
+                .collect(Collectors.groupingBy(Product::name, Collectors.counting()));
         Map<Category, Long> countedByCategoryProviderExpected = productListRecord.stream()
-                .collect(Collectors.groupingBy(ProductRecord::category, Collectors.counting()));
+                .collect(Collectors.groupingBy(Product::category, Collectors.counting()));
         Map<LocalDate, Long> countedByCreatedAtProviderExpected = productListRecord.stream()
-                .collect(Collectors.groupingBy(ProductRecord::createdAt, Collectors.counting()));
+                .collect(Collectors.groupingBy(Product::createdAt, Collectors.counting()));
         Map<LocalDate, Long> countedByUpdatedAtProviderExpected = productListRecord.stream()
-                .collect(Collectors.groupingBy(ProductRecord::updatedAt, Collectors.counting()));
+                .collect(Collectors.groupingBy(Product::updatedAt, Collectors.counting()));
 
         return Stream.of(
-                arguments((Function<ProductRecord, UUID>) ProductRecord::id, productListRecord,
+                arguments((Function<Product, UUID>) Product::id, productListRecord,
                         countedByIdProviderExpected),
-                arguments((Function<ProductRecord, String>) ProductRecord::name, productListRecord,
+                arguments((Function<Product, String>) Product::name, productListRecord,
                         countedByNameProviderExpected),
-                arguments((Function<ProductRecord, Category>) ProductRecord::category, productListRecord,
+                arguments((Function<Product, Category>) Product::category, productListRecord,
                         countedByCategoryProviderExpected),
-                arguments((Function<ProductRecord, LocalDate>) ProductRecord::createdAt, productListRecord,
+                arguments((Function<Product, LocalDate>) Product::createdAt, productListRecord,
                         countedByCreatedAtProviderExpected),
-                arguments((Function<ProductRecord, LocalDate>) ProductRecord::updatedAt, productListRecord,
+                arguments((Function<Product, LocalDate>) Product::updatedAt, productListRecord,
                         countedByUpdatedAtProviderExpected)
         );
     }

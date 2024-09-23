@@ -9,7 +9,7 @@ public class Main {
 
         InputProductData inputProductData = new InputProductData("Hippolyte", Category.GALLICA, 10);
         warehouse.addNewProduct(inputProductData);
-        List<ProductRecord> products = warehouse.getProductListRecord();
+        List<Product> products = warehouse.getProductList();
         products.forEach(System.out::println);
     }
 }

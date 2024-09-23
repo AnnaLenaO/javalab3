@@ -2,7 +2,7 @@ package service;
 
 import entities.InputProductData;
 import entities.ProductList;
-import entities.ProductRecord;
+import entities.Product;
 import entities.Category;
 
 import java.time.LocalDate;
@@ -22,8 +22,8 @@ public class Warehouse {
         this.productList = new ProductList(productList.products());
     }
 
-    public ProductRecord createNewProduct(InputProductData inputProductData) {
-        return new ProductRecord(
+    public Product createNewProduct(InputProductData inputProductData) {
+        return new Product(
                 UUID.randomUUID(),
                 inputProductData.name(),
                 inputProductData.category(),
@@ -37,117 +37,119 @@ public class Warehouse {
         productList.addProduct(createNewProduct(inputProductData));
     }
 
-    public List<ProductRecord> getProductListRecord() {
+    public List<Product> getProductList() {
         return Collections.unmodifiableList(productList.products());
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////
-    public <K, V> Map<K, List<V>> groupingProducts(Function<V, K> function, List<V> listItems) {
+    private <K, V> Map<K, List<V>> groupingProducts(Function<V, K> function, List<V> listItems) {
         return Collections.unmodifiableMap(
                 listItems.stream()
                         .collect(Collectors.groupingBy(function)));
     }
 
-    public <K, V> Map<K, Long> numberOfGroupedProducts(Function<V, K> function, List<V> listItems) {
+    private <K, V> Map<K, Long> numberOfGroupedProducts(Function<V, K> function, List<V> listItems) {
         return Collections.unmodifiableMap(
                 listItems.stream()
                         .collect(Collectors.groupingBy(function, Collectors.counting())));
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////
-    public Map<UUID, List<ProductRecord>> getProductsPerId() {
-        return groupingProducts(ProductRecord::id, productList.products());
+    public Map<UUID, List<Product>> getProductsPerId() {
+        return groupingProducts(Product::id, productList.products());
     }
 
-    public List<ProductRecord> getAProductForItsId(UUID id) {
-        Map<UUID, List<ProductRecord>> productsPerId = getProductsPerId();
-        return productsPerId.getOrDefault(id, List.of());
+    public Optional<Product> getAProductForItsId(UUID id) {
+        Map<UUID, List<Product>> productsPerId = getProductsPerId();
+        return productsPerId.entrySet().stream()
+                .filter(entry -> entry.getKey().equals(id))
+                .flatMap(entry -> entry.getValue().stream())
+                .findFirst();
     }
 
-    public ProductRecord changeProductNameCategoryRating(UUID id, InputProductData inputProductData) {
-        List<ProductRecord> currentProductRecord = getAProductForItsId(id);
-        ProductRecord productRecord = currentProductRecord.getFirst();
+    public Product changeProductNameCategoryRating(UUID id, InputProductData inputProductData) {
+        Product product = getAProductForItsId(id).orElseThrow();
 
-        return new ProductRecord(
-                productRecord.id(),
+        return new Product(
+                product.id(),
                 inputProductData.name(),
                 inputProductData.category(),
                 inputProductData.rating(),
-                productRecord.createdAt(),
+                product.createdAt(),
                 LocalDate.now()
         );
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////
-    public Map<LocalDate, List<ProductRecord>> getProductsPerCreatedAt() {
-        return groupingProducts(ProductRecord::createdAt, productList.products());
+    public Map<LocalDate, List<Product>> getProductsPerCreatedAt() {
+        return groupingProducts(Product::createdAt, productList.products());
     }
 
-    public Map<LocalDate, List<ProductRecord>> getProductsPerUpdatedAt() {
-        return groupingProducts(ProductRecord::updatedAt, productList.products());
+    public Map<LocalDate, List<Product>> getProductsPerUpdatedAt() {
+        return groupingProducts(Product::updatedAt, productList.products());
     }
 
-    public record ProductDatesToCompareRecord(LocalDate dateOne, LocalDate dateTwo) {
+    public record ProductDatesToCompare(LocalDate dateOne, LocalDate dateTwo) {
         public static boolean isDateAfter(LocalDate dateOne, LocalDate dateTwo) {
             return dateOne.isAfter(dateTwo);
         }
     }
 
-    public List<ProductRecord> getFilteredProductsByDate(LocalDate dateTwo) {
-        Map<LocalDate, List<ProductRecord>> allProductsCreatedAfter = getProductsPerCreatedAt();
+    public List<Product> getFilteredProductsByDate(LocalDate dateTwo) {
+        Map<LocalDate, List<Product>> allProductsCreatedAfter = getProductsPerCreatedAt();
         return allProductsCreatedAfter.entrySet().stream()
-                .filter(entry -> ProductDatesToCompareRecord.isDateAfter(entry.getKey(), dateTwo))
+                .filter(entry -> ProductDatesToCompare.isDateAfter(entry.getKey(), dateTwo))
                 .flatMap(entry -> entry.getValue().stream())
                 .toList();
     }
 
-    public List<ProductRecord> getAllUpdatedProducts() {
-        Map<LocalDate, List<ProductRecord>> allUpdatedProducts = getProductsPerUpdatedAt();
+    public List<Product> getAllUpdatedProducts() {
+        Map<LocalDate, List<Product>> allUpdatedProducts = getProductsPerUpdatedAt();
         return allUpdatedProducts.entrySet().stream()
                 .flatMap(entry -> entry.getValue().stream())
-                .filter(product -> ProductDatesToCompareRecord.isDateAfter(product.updatedAt(), product.createdAt()))
+                .filter(product -> ProductDatesToCompare.isDateAfter(product.updatedAt(), product.createdAt()))
                 .toList();
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////
-    public Map<Category, List<ProductRecord>> getProductsPerCategory() {
-        return groupingProducts(ProductRecord::category, productList.products());
+    public Map<Category, List<Product>> getProductsPerCategory() {
+        return groupingProducts(Product::category, productList.products());
     }
 
-    public record ProductsPerProductRecord(List<ProductRecord> productRecord) {
-        public ProductsPerProductRecord(List<ProductRecord> productRecord) {
-            this.productRecord = List.copyOf(productRecord);
+    public record SortedProducts(List<Product> product) {
+        public SortedProducts(List<Product> product) {
+            this.product = List.copyOf(product);
         }
 
-        public static boolean productHasFirstLetter(ProductRecord productRecord) {
-            char firstLetter = Character.toLowerCase(getCharAt(productRecord));
+        public static boolean productHasFirstLetter(Product product) {
+            char firstLetter = Character.toLowerCase(getCharAt(product));
 
             return Character.isLetter(firstLetter) && (firstLetter >= 'a' && firstLetter <= 'z');
         }
 
-        private static char getCharAt(ProductRecord productRecord) {
-            return productRecord.name().charAt(0);
+        private static char getCharAt(Product product) {
+            return product.name().charAt(0);
         }
 
-        public static Comparator<ProductRecord> comparingByNameOfProducts() {
-            return Comparator.comparing(ProductRecord::name);
+        public static Comparator<Product> comparingByNameOfProducts() {
+            return Comparator.comparing(Product::name);
         }
     }
 
-    public ProductsPerProductRecord getSortedProductsForACategory(Category category) {
-        List<ProductRecord> productsForACategory = getProductsPerCategory().get(category);
+    public SortedProducts getSortedProductsForACategory(Category category) {
+        List<Product> productsForACategory = getProductsPerCategory().get(category);
 
         return productsForACategory.stream()
-                .filter(ProductsPerProductRecord::productHasFirstLetter)
-                .sorted(ProductsPerProductRecord.comparingByNameOfProducts())
+                .filter(SortedProducts::productHasFirstLetter)
+                .sorted(SortedProducts.comparingByNameOfProducts())
                 .collect(Collectors.collectingAndThen(
-                        Collectors.toList(), ProductsPerProductRecord::new)
+                        Collectors.toList(), SortedProducts::new)
                 );
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////
     public Map<Category, Long> getNumberOfProductsPerCategory() {
-        return numberOfGroupedProducts(ProductRecord::category, productList.products());
+        return numberOfGroupedProducts(Product::category, productList.products());
     }
 
     public long getNumberOfProductsForACategory(Category category) {
@@ -155,7 +157,7 @@ public class Warehouse {
         return numberOfProductsPerCategory.getOrDefault(category, 0L);
     }
 
-    public record NumberOfProductsPerCategoryRecord(Category category, long numberOfProducts) {
+    public record NumberOfProductsPerCategory(Category category, long numberOfProducts) {
         public static boolean categoryHasProducts(Map.Entry<Category, Long> entry) {
             return entry.getValue() >= 1;
         }
@@ -165,60 +167,60 @@ public class Warehouse {
         Map<Category, Long> numberOfProductsPerCategory = getNumberOfProductsPerCategory();
 
         return numberOfProductsPerCategory.entrySet().stream()
-                .filter(NumberOfProductsPerCategoryRecord::categoryHasProducts)
+                .filter(NumberOfProductsPerCategory::categoryHasProducts)
                 .map(Map.Entry::getKey)
                 .toList();
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////
-    public Map<Character, List<ProductRecord>> getProductsPerFirstLetter() {
-        return groupingProducts(ProductsPerProductRecord::getCharAt,
+    public Map<Character, List<Product>> getProductsPerFirstLetter() {
+        return groupingProducts(SortedProducts::getCharAt,
                 productList.products().stream()
-                        .filter(ProductsPerProductRecord::productHasFirstLetter)
+                        .filter(SortedProducts::productHasFirstLetter)
                         .collect(Collectors.toList()));
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////
-    public Map<Month, List<ProductRecord>> getProductsPerCreatedAtMonth() {
+    public Map<Month, List<Product>> getProductsPerCreatedAtMonth() {
         return groupingProducts(product -> product.createdAt().getMonth(), productList.products());
     }
 
-    public List<ProductRecord> getProductsForAMonth(Month month) {
-        Map<Month, List<ProductRecord>> productsPerMonth = getProductsPerCreatedAtMonth();
+    public List<Product> getProductsForAMonth(Month month) {
+        Map<Month, List<Product>> productsPerMonth = getProductsPerCreatedAtMonth();
         return productsPerMonth.getOrDefault(month, List.of());
     }
 
-    record ProductsPerMonthRecord(Month month, List<ProductRecord> productRecord) {
-        public static boolean productHasMaxRating(ProductRecord productRecord, double maxRating) {
-            return productRecord.rating() == maxRating;
+    record ProductsPerMonth(Month month, List<Product> products) {
+        public static boolean productHasMaxRating(Product product, double maxRating) {
+            return product.rating() == maxRating;
         }
 
-        public static Comparator<ProductRecord> comparingByLocalDate() {
-            return Comparator.comparing(ProductRecord::createdAt);
+        public static Comparator<Product> comparingByLocalDate() {
+            return Comparator.comparing(Product::createdAt);
         }
     }
 
-    public List<ProductRecord> getSortedProductsWithMaxRatingForThisMonthByCreatedAt(CurrentMonthRecord currentMonthRecord) {
-        Month currentMonth = currentMonthRecord.currentMonth();
-        List<ProductRecord> productsForAMonth = getProductsForAMonth(currentMonth);
+    public List<Product> getSortedProductsWithMaxRatingForThisMonthByCreatedAt(ThisMonth thisMonth) {
+        Month currentMonth = thisMonth.currentMonth();
+        List<Product> productsForAMonth = getProductsForAMonth(currentMonth);
 
         final double maxRating = getMaxRating(productsForAMonth);
 
         return productsForAMonth.stream()
-                .filter(product -> ProductsPerMonthRecord.productHasMaxRating(product, maxRating))
-                .sorted(ProductsPerMonthRecord.comparingByLocalDate().reversed())
+                .filter(product -> ProductsPerMonth.productHasMaxRating(product, maxRating))
+                .sorted(ProductsPerMonth.comparingByLocalDate().reversed())
                 .toList();
     }
 
-    public record CurrentMonthRecord(Month currentMonth) {
-        public CurrentMonthRecord() {
+    public record ThisMonth(Month currentMonth) {
+        public ThisMonth() {
             this(LocalDate.now().getMonth());
         }
     }
 
-    private static double getMaxRating(List<ProductRecord> productsForAMonth) {
+    private static double getMaxRating(List<Product> productsForAMonth) {
         return productsForAMonth.stream()
-                .map(ProductRecord::rating)
+                .map(Product::rating)
                 .max(Double::compareTo)
                 .orElseThrow();
     }

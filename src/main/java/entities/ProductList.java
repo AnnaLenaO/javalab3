@@ -5,17 +5,17 @@ import java.util.Collections;
 import java.util.List;
 
 public class ProductList {
-    private final List<ProductRecord> products;
+    private final List<Product> products;
 
-    public ProductList(List<ProductRecord> products) {
+    public ProductList(List<Product> products) {
         this.products = new ArrayList<>(products);
     }
 
-    public void addProduct(ProductRecord newProduct) {
+    public void addProduct(Product newProduct) {
         products.add(newProduct);
     }
 
-    public List<ProductRecord> products() {
+    public List<Product> products() {
         return Collections.unmodifiableList(products);
     }
 }
