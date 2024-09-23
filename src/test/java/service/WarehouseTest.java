@@ -5,6 +5,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.aggregator.ArgumentsAccessor;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDate;
 import java.time.Month;
@@ -73,7 +74,8 @@ class WarehouseTest {
 
         Warehouse warehouse = new Warehouse();
 
-        Map<?, List<Product>> groupedTestResult = warehouse.groupingProducts(function, productList);
+        Map<?, List<Product>> groupedTestResult =
+                ReflectionTestUtils.invokeMethod(warehouse, "groupingProducts", function, productList);
 
         assertThat(groupedTestResult).isNotNull();
         assertThat(groupedTestResult.size()).isGreaterThanOrEqualTo(1);
@@ -87,7 +89,8 @@ class WarehouseTest {
 
         Warehouse warehouse = new Warehouse();
 
-        Map<?, Long> groupedTestResult = warehouse.numberOfGroupedProducts(function, productList);
+        Map<?, Long> groupedTestResult =
+                ReflectionTestUtils.invokeMethod(warehouse, "numberOfGroupedProducts", function, productList);
 
         assertThat(groupedTestResult).isNotNull();
         assertThat(groupedTestResult.size()).isGreaterThanOrEqualTo(1);

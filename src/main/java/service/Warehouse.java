@@ -42,13 +42,13 @@ public class Warehouse {
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////
-    public <K, V> Map<K, List<V>> groupingProducts(Function<V, K> function, List<V> listItems) {
+    private <K, V> Map<K, List<V>> groupingProducts(Function<V, K> function, List<V> listItems) {
         return Collections.unmodifiableMap(
                 listItems.stream()
                         .collect(Collectors.groupingBy(function)));
     }
 
-    public <K, V> Map<K, Long> numberOfGroupedProducts(Function<V, K> function, List<V> listItems) {
+    private <K, V> Map<K, Long> numberOfGroupedProducts(Function<V, K> function, List<V> listItems) {
         return Collections.unmodifiableMap(
                 listItems.stream()
                         .collect(Collectors.groupingBy(function, Collectors.counting())));
