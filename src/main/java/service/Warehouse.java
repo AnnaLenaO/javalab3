@@ -59,21 +59,23 @@ public class Warehouse {
         return groupingProducts(Product::id, productList.products());
     }
 
-    public List<Product> getAProductForItsId(UUID id) {
+    public Optional<Product> getAProductForItsId(UUID id) {
         Map<UUID, List<Product>> productsPerId = getProductsPerId();
-        return productsPerId.getOrDefault(id, List.of());
+        return productsPerId.entrySet().stream()
+                .filter(entry -> entry.getKey().equals(id))
+                .flatMap(entry -> entry.getValue().stream())
+                .findFirst();
     }
 
     public Product changeProductNameCategoryRating(UUID id, InputProductData inputProductData) {
-        List<Product> currentProductRecord = getAProductForItsId(id);
-        Product productRecord = currentProductRecord.getFirst();
+        Product product = getAProductForItsId(id).orElseThrow();
 
         return new Product(
-                productRecord.id(),
+                product.id(),
                 inputProductData.name(),
                 inputProductData.category(),
                 inputProductData.rating(),
-                productRecord.createdAt(),
+                product.createdAt(),
                 LocalDate.now()
         );
     }

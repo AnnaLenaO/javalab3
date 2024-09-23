@@ -160,21 +160,13 @@ class WarehouseTest {
         Warehouse warehouse = new Warehouse(productList);
         UUID productId = UUID.fromString("e1c63601-999c-48d8-8900-cbc4b870db2e");
 
-        List<Product> singleTestResult = warehouse.getAProductForItsId(productId);
+        Optional<Product> singleTestResult = warehouse.getAProductForItsId(productId);
 
         assertThat(singleTestResult).isNotNull();
-        assertThat(singleTestResult.size()).isEqualTo(1);
-        assertThat(singleTestResult)
-                .extracting("id")
-                .singleElement()
-                .isEqualTo(productId);
-        assertThat(singleTestResult)
-                .extracting("name")
-                .singleElement()
-                .isEqualTo("Wasagaming");
-        assertThat(singleTestResult)
-                .extracting("name")
-                .containsOnlyOnce("Wasagaming");
+        assertThat(singleTestResult.isPresent()).isTrue();
+        assertThat((singleTestResult.get()).id()).isEqualTo(productId);
+        assertThat((singleTestResult.get()).name()).isEqualTo("Wasagaming");
+        assertThat((singleTestResult.get()).name()).containsOnlyOnce("Wasagaming");
     }
 
     @ParameterizedTest(name = "Change product name, category & rating")
